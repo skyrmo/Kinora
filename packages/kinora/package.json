@@ -1,0 +1,36 @@
+{
+  "name": "kinora",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Javascript Carousels",
+  "homepage": "",
+  "license": "MIT",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "bumpp": "^12.3.0",
+    "typescript": "^7.0.2",
+    "vite-plus": "catalog:"
+  }
+}

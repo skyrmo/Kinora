@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kinora playground</title>
+  </head>
+  <body>
+    <main>
+      <h1>Kinora playground</h1>
+
+      <div class="carousel" data-carousel>
+        <div class="slide">
+          <div class="card" style="--hue: 0"><span>1</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 45"><span>2</span></div>
+        </div>
+        <div class="slide slide--wide">
+          <div class="card" style="--hue: 90"><span>3</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 135"><span>4</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 180"><span>5</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 225"><span>6</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 270"><span>7</span></div>
+        </div>
+        <div class="slide">
+          <div class="card" style="--hue: 315"><span>8</span></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button type="button" data-prev aria-label="Previous slide">←</button>
+        <div class="dots" data-dots></div>
+        <button type="button" data-next aria-label="Next slide">→</button>
+      </div>
+
+      <p class="spacer">Scroll down: the page must still scroll normally over the carousel.</p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
