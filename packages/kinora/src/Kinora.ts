@@ -1,16 +1,22 @@
 import { ENGINE_DEFAULTS, Engine, type EngineOptions } from "./engine";
+import { Emitter } from "./emitter";
 import { clamp } from "./utils";
 
 export interface KinoraOptions extends EngineOptions {
   dragSensitivity: number;
 }
 
+/** Event name → what listeners receive. (A `type`, not an `interface`, so it fits Record<string, unknown>.) */
+export type KinoraEvents = {
+  update: Kinora;
+};
+
 const DEFAULTS: KinoraOptions = {
   dragSensitivity: 1,
   ...ENGINE_DEFAULTS,
 };
 
-export class Kinora {
+export class Kinora extends Emitter<KinoraEvents> {
   readonly wrapper: HTMLElement;
   readonly items: HTMLElement[];
   readonly options: KinoraOptions;
@@ -22,6 +28,7 @@ export class Kinora {
   #abort = new AbortController();
 
   constructor(wrapper: HTMLElement, options = {}) {
+    super();
     this.wrapper = wrapper;
     this.items = Array.from(wrapper.children) as HTMLElement[];
     this.options = { ...DEFAULTS, ...options };
@@ -43,6 +50,7 @@ export class Kinora {
     this.#lastTime = now;
     if (this.engine.step(dt)) {
       this.#render();
+      this.emit("update", this);
     }
   }
 
