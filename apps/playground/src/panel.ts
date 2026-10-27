@@ -5,6 +5,11 @@ import type { Kinora } from "kinora";
 export function panel(kinora: Kinora) {
   const gui = new GUI({ title: "Kinora" });
   gui.add(kinora.options, "damping", 1, 40, 0.5);
+
+  gui.add(kinora.options, "snap");
+
+  gui.add(kinora.options, "edgeResistance", 0, 1, 0.05);
+
   gui.add(kinora.options, "dragSensitivity", 0.2, 3, 0.1);
   return () => gui.destroy();
 }

@@ -1,6 +1,7 @@
 import { ENGINE_DEFAULTS, Engine, type EngineOptions } from "./engine";
 import { Emitter } from "./emitter";
 import { clamp } from "./utils";
+import { FiniteTrack, type CellBox, type Layout } from "./track";
 
 export interface KinoraOptions extends EngineOptions {
   dragSensitivity: number;
@@ -11,6 +12,13 @@ export type KinoraEvents = {
   update: Kinora;
 };
 
+export interface Cell extends CellBox {
+  /** Its place in the strip (0 = first). */
+  index: number;
+  /** The element in this cell (a direct child of the wrapper). */
+  element: HTMLElement;
+}
+
 const DEFAULTS: KinoraOptions = {
   dragSensitivity: 1,
   ...ENGINE_DEFAULTS,
@@ -18,9 +26,13 @@ const DEFAULTS: KinoraOptions = {
 
 export class Kinora extends Emitter<KinoraEvents> {
   readonly wrapper: HTMLElement;
-  readonly items: HTMLElement[];
   readonly options: KinoraOptions;
   readonly engine: Engine;
+
+  // readonly items: HTMLElement[];
+
+  cells: Cell[] = [];
+  layout: Layout = { cells: [], total: 0, viewport: 0 };
 
   #pointerId: number | null = null;
   #lastPointer = 0;
@@ -30,9 +42,9 @@ export class Kinora extends Emitter<KinoraEvents> {
   constructor(wrapper: HTMLElement, options = {}) {
     super();
     this.wrapper = wrapper;
-    this.items = Array.from(wrapper.children) as HTMLElement[];
     this.options = { ...DEFAULTS, ...options };
     this.engine = new Engine(this.options);
+    this.#measure();
     this.#addEvents();
     requestAnimationFrame(this.#loop);
   }
@@ -52,6 +64,19 @@ export class Kinora extends Emitter<KinoraEvents> {
       this.#render();
       this.emit("update", this);
     }
+  }
+
+  #measure() {
+    const elements = Array.from(this.wrapper.children) as HTMLElement[];
+    let total = 0;
+    this.cells = elements.map((element, index) => {
+      const size = element.getBoundingClientRect().width;
+      const cell: Cell = { index, element, start: total, size };
+      total += size;
+      return cell;
+    });
+    this.layout = { cells: this.cells, total, viewport: this.wrapper.clientWidth };
+    this.engine.track = new FiniteTrack(this.layout);
   }
 
   #loop = (time: number) => {
@@ -84,8 +109,8 @@ export class Kinora extends Emitter<KinoraEvents> {
 
   #render() {
     const x = -this.engine.current;
-    for (const item of this.items) {
-      item.style.transform = `translate3d(${x}px, 0, 0)`;
+    for (const cell of this.cells) {
+      cell.element.style.transform = `translate3d(${x}px, 0, 0)`;
     }
   }
 }
