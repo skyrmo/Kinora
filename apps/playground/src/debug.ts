@@ -15,6 +15,9 @@ export function debug(kinora: Kinora) {
       `current  ${current.toFixed(1)} px`,
       `gap      ${gap.toFixed(1)} px`,
       `         ${bar}`,
+      `page     ${kinora.index + 1} / ${kinora.pageCount}`,
+      `cell     ${kinora.cellIndex + 1} / ${kinora.cells.length}`,
+      `progress ${(kinora.progress * 100).toFixed(0)}%`,
     ].join("\n");
   };
 

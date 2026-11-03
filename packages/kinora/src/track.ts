@@ -37,6 +37,12 @@ export interface Track {
   /** Signed distance from position `a` to position `b`. */
 
   distance(a: number, b: number): number;
+
+  /** Turn any page number into a valid page index. */
+  indexFor(index: number): number;
+
+  /** 0 at the start, 1 at the end. */
+  progress(position: number): number;
 }
 
 export class FiniteTrack implements Track {
@@ -86,5 +92,13 @@ export class FiniteTrack implements Track {
 
   distance(a: number, b: number): number {
     return b - a;
+  }
+
+  indexFor(index: number): number {
+    return clamp(Math.round(index), 0, this.snapPoints.length - 1);
+  }
+
+  progress(position: number): number {
+    return this.max > 0 ? clamp(position / this.max, 0, 1) : 0;
   }
 }

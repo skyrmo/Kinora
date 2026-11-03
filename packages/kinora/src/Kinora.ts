@@ -10,6 +10,7 @@ export interface KinoraOptions extends EngineOptions {
 /** Event name → what listeners receive. (A `type`, not an `interface`, so it fits Record<string, unknown>.) */
 export type KinoraEvents = {
   update: Kinora;
+  change: { index: number; previous: number };
 };
 
 export interface Cell extends CellBox {
@@ -17,6 +18,10 @@ export interface Cell extends CellBox {
   index: number;
   /** The element in this cell (a direct child of the wrapper). */
   element: HTMLElement;
+  /** Where it is drawn right now: px from the window's leading edge (wrapped if infinite). */
+  position: number;
+  /** How much of it is inside the window: 0 = none, 1 = all of it. */
+  visibility: number;
 }
 
 const DEFAULTS: KinoraOptions = {
@@ -29,7 +34,8 @@ export class Kinora extends Emitter<KinoraEvents> {
   readonly options: KinoraOptions;
   readonly engine: Engine;
 
-  // readonly items: HTMLElement[];
+  index = 0; // active page (snap point)
+  cellIndex = 0; // cell closest to the window's leading edge
 
   cells: Cell[] = [];
   layout: Layout = { cells: [], total: 0, viewport: 0 };
@@ -49,12 +55,28 @@ export class Kinora extends Emitter<KinoraEvents> {
     requestAnimationFrame(this.#loop);
   }
 
-  #addEvents() {
-    const signal = this.#abort.signal;
-    this.wrapper.addEventListener("pointerdown", this.#onPointerDown, { signal });
-    window.addEventListener("pointermove", this.#onPointerMove, { signal });
-    window.addEventListener("pointerup", this.#onPointerUp, { signal });
-    window.addEventListener("pointercancel", this.#onPointerUp, { signal });
+  /* -----PUBLIC API ----------- */
+
+  /** 0 at the start, 1 at the end. */
+  get progress(): number {
+    return this.engine.progress;
+  }
+
+  /** How many pages (resting positions) there are. */
+  get pageCount(): number {
+    return this.engine.track.snapPoints.length;
+  }
+
+  goTo(index: number) {
+    this.engine.goTo(index);
+  }
+
+  next() {
+    this.engine.next();
+  }
+
+  prev() {
+    this.engine.prev();
   }
 
   update(now = performance.now()) {
@@ -62,16 +84,24 @@ export class Kinora extends Emitter<KinoraEvents> {
     this.#lastTime = now;
     if (this.engine.step(dt)) {
       this.#render();
+      this.#updateIndex();
       this.emit("update", this);
     }
   }
+
+  /* ----------------- LOOP, MEASURING, DRAWING --------------- */
+
+  #loop = (time: number) => {
+    this.update(time);
+    requestAnimationFrame(this.#loop);
+  };
 
   #measure() {
     const elements = Array.from(this.wrapper.children) as HTMLElement[];
     let total = 0;
     this.cells = elements.map((element, index) => {
       const size = element.getBoundingClientRect().width;
-      const cell: Cell = { index, element, start: total, size };
+      const cell: Cell = { index, element, start: total, size, position: total, visibility: 0 };
       total += size;
       return cell;
     });
@@ -79,10 +109,40 @@ export class Kinora extends Emitter<KinoraEvents> {
     this.engine.track = new FiniteTrack(this.layout);
   }
 
-  #loop = (time: number) => {
-    this.update(time);
-    requestAnimationFrame(this.#loop);
-  };
+  #render() {
+    const { current } = this.engine;
+    const { viewport } = this.layout;
+    let closest = Infinity;
+
+    for (const cell of this.cells) {
+      cell.position = cell.start - current;
+      const inside = Math.min(cell.position + cell.size, viewport) - Math.max(cell.position, 0);
+      cell.visibility = cell.size > 0 ? clamp(inside / cell.size, 0, 1) : 0;
+      if (Math.abs(cell.position) < closest) {
+        closest = Math.abs(cell.position);
+        this.cellIndex = cell.index;
+      }
+      cell.element.style.transform = `translate3d(${cell.position - cell.start}px, 0, 0)`;
+    }
+  }
+
+  #updateIndex() {
+    const index = this.engine.nearestIndex(this.engine.current);
+    if (index === this.index) return;
+    const previous = this.index;
+    this.index = index;
+    this.emit("change", { index, previous });
+  }
+
+  /* ------------------ INPUT ----------------------------- */
+
+  #addEvents() {
+    const signal = this.#abort.signal;
+    this.wrapper.addEventListener("pointerdown", this.#onPointerDown, { signal });
+    window.addEventListener("pointermove", this.#onPointerMove, { signal });
+    window.addEventListener("pointerup", this.#onPointerUp, { signal });
+    window.addEventListener("pointercancel", this.#onPointerUp, { signal });
+  }
 
   #onPointerDown = (e: PointerEvent) => {
     if (this.#pointerId !== null) return; // already following another pointer
@@ -106,11 +166,4 @@ export class Kinora extends Emitter<KinoraEvents> {
     this.engine.end();
     this.wrapper.classList.remove("is-dragging");
   };
-
-  #render() {
-    const x = -this.engine.current;
-    for (const cell of this.cells) {
-      cell.element.style.transform = `translate3d(${x}px, 0, 0)`;
-    }
-  }
 }

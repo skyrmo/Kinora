@@ -54,4 +54,11 @@ describe("Engine", () => {
     engine.move(0); // …and hold still
     expect(engine.target).toBeCloseTo(drawnAt);
   });
+
+  it("next() counts from the target, so two quick clicks move two pages", () => {
+    const engine = makeEngine();
+    engine.next();
+    engine.next(); // no frames in between
+    expect(engine.target).toBe(550);
+  });
 });

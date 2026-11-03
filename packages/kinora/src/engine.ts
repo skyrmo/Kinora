@@ -77,4 +77,23 @@ export class Engine {
     }
     this.target = position;
   }
+
+  /** 0 at the start, 1 at the end. */
+  get progress(): number {
+    return this.track.progress(this.current);
+  }
+
+  /** Head for page `index`. */
+  goTo(index: number) {
+    const point = this.track.snapPoints[this.track.indexFor(index)];
+    this.target += this.track.distance(this.target, point);
+  }
+
+  next() {
+    this.goTo(this.nearestIndex(this.target) + 1);
+  }
+
+  prev() {
+    this.goTo(this.nearestIndex(this.target) - 1);
+  }
 }
